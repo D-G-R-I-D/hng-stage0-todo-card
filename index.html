@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todo Card — Stage 0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0e0f11;
+      --surface:      #16181c;
+      --surface-2:    #1e2126;
+      --border:       #2a2d35;
+      --border-light: #363b46;
+      --text-primary: #f0f1f3;
+      --text-secondary:#8a8f9e;
+      --text-muted:   #555c6e;
+      --accent:       #d4ff5e;
+      --accent-dim:   rgba(212,255,94,0.12);
+      --accent-glow:  rgba(212,255,94,0.25);
+      --red:          #ff5b5b;
+      --red-dim:      rgba(255,91,91,0.12);
+      --amber:        #ffb628;
+      --amber-dim:    rgba(255,182,40,0.12);
+      --blue:         #5b8fff;
+      --blue-dim:     rgba(91,143,255,0.12);
+      --green:        #4ade80;
+      --green-dim:    rgba(74,222,128,0.12);
+      --radius-sm:    6px;
+      --radius-md:    12px;
+      --radius-lg:    18px;
+      --shadow:       0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
+      --shadow-hover: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px var(--border-light);
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'Outfit', sans-serif;
+      --font-mono:    'DM Mono', monospace;
+      --transition:   0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      /* subtle grid texture */
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      background-position: center center;
+    }
+
+    /* ── Page header ───────────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .page-header .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 400;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+    .page-header h1 em {
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+
+    /* ── Card ──────────────────────────────────────────────────────── */
+    article[data-testid="test-todo-card"] {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: box-shadow var(--transition), transform var(--transition);
+      animation: fadeUp 0.55s 0.1s ease both;
+      position: relative;
+    }
+
+    article[data-testid="test-todo-card"]:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    /* completed state */
+    article[data-testid="test-todo-card"].is-done {
+      opacity: 0.72;
+    }
+    article[data-testid="test-todo-card"].is-done .card-accent-bar {
+      background: var(--text-muted);
+    }
+
+    /* ── Accent bar ────────────────────────────────────────────────── */
+    .card-accent-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #a3ef00);
+      transition: background var(--transition);
+    }
+
+    /* ── Card inner ────────────────────────────────────────────────── */
+    .card-inner {
+      padding: 24px 24px 20px;
+    }
+
+    /* ── Top row: priority + status + checkbox ─────────────────────── */
+    .card-top-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Priority badge */
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      transition: all var(--transition);
+    }
+    .priority-badge[data-priority="high"] {
+      background: var(--red-dim);
+      color: var(--red);
+      border-color: rgba(255,91,91,0.25);
+    }
+    .priority-badge[data-priority="medium"] {
+      background: var(--amber-dim);
+      color: var(--amber);
+      border-color: rgba(255,182,40,0.25);
+    }
+    .priority-badge[data-priority="low"] {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border-color: rgba(91,143,255,0.25);
+    }
+    .priority-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* Separator dot */
+    .sep {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+      transition: all var(--transition);
+    }
+    .status-badge[data-status="pending"] {
+      background: rgba(138,143,158,0.12);
+      color: var(--text-secondary);
+      border-color: rgba(138,143,158,0.2);
+    }
+    .status-badge[data-status="in-progress"] {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border-color: rgba(91,143,255,0.25);
+    }
+    .status-badge[data-status="done"] {
+      background: var(--green-dim);
+      color: var(--green);
+      border-color: rgba(74,222,128,0.25);
+    }
+
+    /* Push checkbox to the right */
+    .top-spacer { flex: 1; }
+
+    /* ── Checkbox ──────────────────────────────────────────────────── */
+    .complete-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 6px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), color var(--transition);
+    }
+    .complete-label:hover {
+      background: var(--surface-2);
+      color: var(--text-secondary);
+    }
+    .complete-label:has(input:focus-visible) {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    input[data-testid="test-todo-complete-toggle"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-light);
+      border-radius: 5px;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    input[data-testid="test-todo-complete-toggle"]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    input[data-testid="test-todo-complete-toggle"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    input[data-testid="test-todo-complete-toggle"]:checked::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 5px;
+      width: 5px;
+      height: 9px;
+      border: 2px solid #0e0f11;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    /* ── Title ─────────────────────────────────────────────────────── */
+    h2[data-testid="test-todo-title"] {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 400;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      transition: color var(--transition), text-decoration var(--transition);
+    }
+
+    .is-done h2[data-testid="test-todo-title"] {
+      text-decoration: line-through;
+      text-decoration-color: var(--text-muted);
+      color: var(--text-muted);
+    }
+
+    /* ── Description ───────────────────────────────────────────────── */
+    p[data-testid="test-todo-description"] {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    /* ── Divider ───────────────────────────────────────────────────── */
+    .card-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 16px;
+    }
+
+    /* ── Meta row: due date + time remaining ───────────────────────── */
+    .card-meta {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .meta-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .meta-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    time[data-testid="test-todo-due-date"] {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    .time-remaining-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    [data-testid="test-todo-time-remaining"] {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 3px 9px;
+      border-radius: 100px;
+      white-space: nowrap;
+      transition: all var(--transition);
+    }
+    [data-testid="test-todo-time-remaining"].state-overdue {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(255,91,91,0.25);
+    }
+    [data-testid="test-todo-time-remaining"].state-soon {
+      background: var(--amber-dim);
+      color: var(--amber);
+      border: 1px solid rgba(255,182,40,0.25);
+    }
+    [data-testid="test-todo-time-remaining"].state-ok {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(212,255,94,0.2);
+    }
+    [data-testid="test-todo-time-remaining"].state-done {
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,0.25);
+    }
+
+    .meta-sep {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    /* ── Tags ──────────────────────────────────────────────────────── */
+    ul[data-testid="test-todo-tags"] {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    ul[data-testid="test-todo-tags"] li {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: border-color var(--transition), color var(--transition);
+    }
+
+    ul[data-testid="test-todo-tags"] li:hover {
+      border-color: var(--border-light);
+      color: var(--text-primary);
+    }
+
+    .tag-icon {
+      font-size: 0.7rem;
+      opacity: 0.75;
+    }
+
+    /* ── Action row ────────────────────────────────────────────────── */
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 4px;
+    }
+
+    .actions-spacer { flex: 1; }
+
+    /* Base button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all var(--transition);
+      text-decoration: none;
+      line-height: 1;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .btn-edit {
+      background: var(--surface-2);
+      border-color: var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-edit:hover {
+      background: var(--border);
+      border-color: var(--border-light);
+      color: var(--text-primary);
+    }
+    .btn-edit:active { transform: scale(0.97); }
+
+    .btn-delete {
+      background: var(--red-dim);
+      border-color: rgba(255,91,91,0.2);
+      color: var(--red);
+    }
+    .btn-delete:hover {
+      background: rgba(255,91,91,0.2);
+      border-color: rgba(255,91,91,0.4);
+    }
+    .btn-delete:active { transform: scale(0.97); }
+
+    /* SVG icons inside buttons */
+    .btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── Card footer note ──────────────────────────────────────────── */
+    .card-footer {
+      padding: 10px 24px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-footer-text {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .live-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease infinite;
+      flex-shrink: 0;
+    }
+
+    /* ── Animations ────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Footer credit ─────────────────────────────────────────────── */
+    .page-footer {
+      margin-top: 32px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    /* ── Responsive ────────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      body { padding: 16px 12px; background-size: 28px 28px; }
+      .card-inner { padding: 20px 18px 16px; }
+      .card-footer { padding: 10px 18px 12px; }
+
+      h2[data-testid="test-todo-title"] { font-size: 1.2rem; }
+
+      .card-top-row { gap: 6px; }
+      .complete-label span { display: none; } /* hide "Mark done" text on xs */
+      .complete-label { padding: 4px; }
+    }
+
+    @media (min-width: 600px) {
+      article[data-testid="test-todo-card"] { max-width: 480px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="page-header" role="banner">
+    <p class="eyebrow">HNG i14 · Stage 0 · Frontend</p>
+    <h1>Task <em>Manager</em></h1>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       ROOT CARD
+  ════════════════════════════════════════════════════════════════ -->
+  <article
+    data-testid="test-todo-card"
+    role="region"
+    aria-label="Todo card: Redesign the onboarding flow"
+  >
+
+    <!-- Accent bar -->
+    <div class="card-accent-bar" aria-hidden="true"></div>
+
+    <div class="card-inner">
+
+      <!-- ── Top row ──────────────────────────────────────────────── -->
+      <div class="card-top-row">
+
+        <!-- Priority -->
+        <span
+          data-testid="test-todo-priority"
+          class="priority-badge"
+          data-priority="high"
+          aria-label="Priority: High"
+        >
+          <span class="priority-dot" aria-hidden="true"></span>
+          High
+        </span>
+
+        <span class="sep" aria-hidden="true"></span>
+
+        <!-- Status -->
+        <span
+          data-testid="test-todo-status"
+          class="status-badge"
+          data-status="in-progress"
+          id="todo-status"
+          aria-label="Status: In Progress"
+        >
+          In Progress
+        </span>
+
+        <span class="top-spacer"></span>
+
+        <!-- Checkbox -->
+        <label class="complete-label" for="todo-complete-toggle">
+          <input
+            type="checkbox"
+            id="todo-complete-toggle"
+            data-testid="test-todo-complete-toggle"
+            aria-label="Mark task as complete"
+            aria-describedby="todo-status"
+          />
+          <span>Mark done</span>
+        </label>
+
+      </div>
+      <!-- /top row -->
+
+      <!-- ── Title ─────────────────────────────────────────────────── -->
+      <h2 data-testid="test-todo-title">
+        Redesign the Onboarding Flow
+      </h2>
+
+      <!-- ── Description ───────────────────────────────────────────── -->
+      <p data-testid="test-todo-description">
+        Audit and rebuild the new-user onboarding experience end-to-end —
+        covering UI copy, step sequencing, empty states, and mobile
+        breakpoints. Coordinate with the Growth and Design teams for sign-off.
+      </p>
+
+      <div class="card-divider" aria-hidden="true"></div>
+
+      <!-- ── Meta: due date + time remaining ───────────────────────── -->
+      <div class="card-meta" role="group" aria-label="Deadline information">
+
+        <div class="meta-block">
+          <span class="meta-label" aria-hidden="true">Due date</span>
+          <time
+            data-testid="test-todo-due-date"
+            datetime="2026-04-18T18:00:00Z"
+            aria-label="Due date: Due Apr 18, 2026"
+          >
+            Due Apr 18, 2026
+          </time>
+        </div>
+
+        <div class="meta-sep" aria-hidden="true"></div>
+
+        <div class="time-remaining-wrap meta-block">
+          <span class="meta-label" aria-hidden="true">Time left</span>
+          <span
+            data-testid="test-todo-time-remaining"
+            id="time-remaining"
+            class="state-ok"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="Time remaining"
+          >
+            — calculating…
+          </span>
+        </div>
+
+      </div>
+      <!-- /meta -->
+
+      <!-- ── Tags ──────────────────────────────────────────────────── -->
+      <ul
+        data-testid="test-todo-tags"
+        role="list"
+        aria-label="Task tags"
+      >
+        <li
+          data-testid="test-todo-tag-work"
+          role="listitem"
+          aria-label="Tag: work"
+        >
+          <span class="tag-icon" aria-hidden="true">💼</span>
+          work
+        </li>
+        <li
+          data-testid="test-todo-tag-urgent"
+          role="listitem"
+          aria-label="Tag: urgent"
+        >
+          <span class="tag-icon" aria-hidden="true">🔥</span>
+          urgent
+        </li>
+        <li
+          role="listitem"
+          aria-label="Tag: design"
+        >
+          <span class="tag-icon" aria-hidden="true">🎨</span>
+          design
+        </li>
+      </ul>
+
+      <!-- ── Actions ───────────────────────────────────────────────── -->
+      <div class="card-actions" role="group" aria-label="Task actions">
+
+        <span class="actions-spacer"></span>
+
+        <button
+          type="button"
+          data-testid="test-todo-edit-button"
+          class="btn btn-edit"
+          aria-label="Edit task"
+        >
+          <!-- Pencil icon -->
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M11.5 2.5a1.414 1.414 0 012 2L5 13H3v-2L11.5 2.5z"
+              stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9.5 4.5l2 2" stroke="currentColor" stroke-width="1.4"
+              stroke-linecap="round"/>
+          </svg>
+          Edit
+        </button>
+
+        <button
+          type="button"
+          data-testid="test-todo-delete-button"
+          class="btn btn-delete"
+          aria-label="Delete task"
+        >
+          <!-- Trash icon -->
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M3 4h10M6 4V3h4v1M5 4l.5 9h5L11 4"
+              stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 7v4M9 7v4"
+              stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Delete
+        </button>
+
+      </div>
+      <!-- /actions -->
+
+    </div>
+    <!-- /card-inner -->
+
+    <!-- ── Footer ────────────────────────────────────────────────────── -->
+    <footer class="card-footer">
+      <div class="live-dot" aria-hidden="true"></div>
+      <span class="card-footer-text">
+        Updates every 60 s · Created Apr 10, 2026
+      </span>
+    </footer>
+
+  </article>
+  <!-- /article -->
+
+  <p class="page-footer">HNG Internship i14 · Stage 0 · Frontend</p>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      /* ── Config ─────────────────────────────────────────────────── */
+      const DUE_DATE = new Date('2026-04-18T18:00:00Z');
+
+      /* ── Elements ───────────────────────────────────────────────── */
+      const card       = document.querySelector('[data-testid="test-todo-card"]');
+      const checkbox   = document.querySelector('[data-testid="test-todo-complete-toggle"]');
+      const statusEl   = document.querySelector('[data-testid="test-todo-status"]');
+      const timeEl     = document.querySelector('[data-testid="test-todo-time-remaining"]');
+      const editBtn    = document.querySelector('[data-testid="test-todo-edit-button"]');
+      const deleteBtn  = document.querySelector('[data-testid="test-todo-delete-button"]');
+
+      /* ── Time remaining ─────────────────────────────────────────── */
+      function getTimeRemaining () {
+        const now   = Date.now();
+        const diff  = DUE_DATE.getTime() - now;          // ms; negative = overdue
+        const absDiff = Math.abs(diff);
+        const mins  = Math.floor(absDiff / 60_000);
+        const hours = Math.floor(absDiff / 3_600_000);
+        const days  = Math.floor(absDiff / 86_400_000);
+
+        if (checkbox.checked) {
+          return { text: 'Completed ✓', state: 'state-done' };
+        }
+
+        if (diff < 0) {
+          // overdue
+          if (hours < 1)    return { text: `Overdue by ${mins}m`,        state: 'state-overdue' };
+          if (hours < 24)   return { text: `Overdue by ${hours}h`,       state: 'state-overdue' };
+          return             { text: `Overdue by ${days}d`,               state: 'state-overdue' };
+        }
+
+        // upcoming
+        if (mins < 30)      return { text: 'Due now!',                   state: 'state-soon' };
+        if (hours < 24)     return { text: `Due in ${hours}h ${mins % 60}m`, state: 'state-soon' };
+        if (days === 1)     return { text: 'Due tomorrow',               state: 'state-soon' };
+        return               { text: `Due in ${days} days`,              state: 'state-ok' };
+      }
+
+      function updateTimeRemaining () {
+        const { text, state } = getTimeRemaining();
+        timeEl.textContent    = text;
+        timeEl.className      = state;
+        timeEl.setAttribute('aria-label', `Time remaining: ${text}`);
+      }
+
+      /* ── Checkbox toggle ────────────────────────────────────────── */
+      function applyCompletedState () {
+        const done = checkbox.checked;
+
+        card.classList.toggle('is-done', done);
+
+        // Status badge
+        statusEl.textContent = done ? 'Done' : 'In Progress';
+        statusEl.dataset.status = done ? 'done' : 'in-progress';
+        statusEl.setAttribute('aria-label', `Status: ${done ? 'Done' : 'In Progress'}`);
+
+        // Accent bar (uses CSS .is-done rule automatically)
+
+        updateTimeRemaining();
+      }
+
+      checkbox.addEventListener('change', applyCompletedState);
+
+      /* ── Edit button ────────────────────────────────────────────── */
+      editBtn.addEventListener('click', function () {
+        console.log('[todo] edit clicked');
+        // Production would open a modal/drawer here
+        editBtn.setAttribute('aria-pressed', 'true');
+        setTimeout(() => editBtn.removeAttribute('aria-pressed'), 300);
+      });
+
+      /* ── Delete button ──────────────────────────────────────────── */
+      deleteBtn.addEventListener('click', function () {
+        console.log('[todo] delete clicked');
+        alert('Delete task? (dummy action — no tasks were harmed)');
+      });
+
+      /* ── Init ───────────────────────────────────────────────────── */
+      updateTimeRemaining();
+      setInterval(updateTimeRemaining, 60_000);
+
+    })();
+  </script>
+
+</body>
+</html>
