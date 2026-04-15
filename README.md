@@ -7,11 +7,11 @@
 
 ## Live Demo
 
-🔗 [View Live](https://YOUR-USERNAME.github.io/hng-stage0-todo-card/)
+🔗 [View Live](https://d-g-r-i-d.github.io/hng-stage0-todo-card/)
 
 ## Repository
 
-📁 [GitHub Repo](https://github.com/YOUR-USERNAME/hng-stage0-todo-card)
+📁 [GitHub Repo](https://github.com/D-G-R-I-D/hng-stage0-todo-card)
 
 ---
 
